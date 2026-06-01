@@ -1,0 +1,49 @@
+# Example: serve Gemma4 with this image.
+# Point `image:` at wherever you pushed the build (see README), ideally an
+# immutable tag like pr42006-<base-digest> rather than pr42006-latest.
+services:
+  gemma4:
+    image: ghcr.io/OWNER/gemma4-vllm:pr42006-latest
+    restart: unless-stopped
+    ipc: host
+    devices:
+      - nvidia.com/gpu=all
+    ports:
+      - "8000:8000"
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - vllm-cache:/root/.cache/vllm
+      # No parser bind-mount needed — the PR #42006 fix is baked into the image.
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    command:
+      - --model
+      - Intel/gemma-4-31B-it-int4-AutoRound      # GPTQ/AutoRound INT4 (not AWQ)
+      - --served-model-name
+      - gemma-4-31b
+      - --dtype
+      - bfloat16                                 # not float16: Gemma 4 unscaled attention overflows
+      - --tensor-parallel-size
+      - "2"
+      - --max-model-len
+      - "65536"
+      - --gpu-memory-utilization
+      - "0.90"
+      # MTP + streaming tool calls is exactly what the PR #42006 fix targets:
+      - --speculative-config
+      - '{"method":"mtp","model":"google/gemma-4-31B-it-assistant","num_speculative_tokens":4}'
+      - --disable-custom-all-reduce              # multi-GPU without NVLink
+      - --trust-remote-code
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - gemma4
+      - --reasoning-parser
+      - gemma4
+
+volumes:
+  hf-cache:
+  vllm-cache:
