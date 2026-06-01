@@ -13,6 +13,9 @@ FROM vllm/vllm-openai@${BASE_DIGEST}
 
 # Provenance of the baked-in parser, recorded as image labels.
 # SOURCE_URL: set to the source repo so the registry can link the package to it.
+# BASE_DIGEST is re-declared here: an ARG before FROM is only in scope for the
+# FROM line, so it must be redeclared to be usable in the LABEL below.
+ARG BASE_DIGEST
 ARG PR_REF=42006
 ARG PR_SHA=795272896d4b444600c759f207ebae36c2e9d80c
 ARG SOURCE_URL=""
