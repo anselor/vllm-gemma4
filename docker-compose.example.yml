@@ -43,7 +43,8 @@ services:
       - gemma4
       - --reasoning-parser
       - gemma4
-
+      - --max-num-seqs                            # Concurrency bug >=4 #35288
+      - "3"
 volumes:
   hf-cache:
   vllm-cache:
