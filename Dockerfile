@@ -8,7 +8,10 @@
 
 # Base nightly digest. Override with:
 #   --build-arg BASE_DIGEST=sha256:<new digest>
-ARG BASE_DIGEST=sha256:4cebac8c03f2cd9f5fabe72ac7c2a0b3aaa8450ef8f0e47429425fd1bfb83d42
+# Default is the 2026-06-10 nightly (nightly-2c9c07c8), which is the one tagged
+# `latest` by build-and-push.sh. The 2026-06-07 nightly (nightly-9c7f7741,
+# sha256:f1900e87…) is the conservative alternative also built by that script.
+ARG BASE_DIGEST=sha256:03768d9400bf490934e5dce2e9d8ddd9e004a5054939e14641188d8a9b69db8e
 FROM vllm/vllm-openai@${BASE_DIGEST}
 
 # Provenance of the baked-in parser, recorded as image labels.
@@ -16,11 +19,13 @@ FROM vllm/vllm-openai@${BASE_DIGEST}
 # BASE_DIGEST is re-declared here: an ARG before FROM is only in scope for the
 # FROM line, so it must be redeclared to be usable in the LABEL below.
 ARG BASE_DIGEST
+ARG BASE_DATE=""
 ARG PR_REF=42006
-ARG PR_SHA=795272896d4b444600c759f207ebae36c2e9d80c
+ARG PR_SHA=fe026ca4547295936c8bac39b4e0ed8885d07ea7
 ARG SOURCE_URL=""
 LABEL org.opencontainers.image.description="vLLM nightly with the Gemma4 MTP streaming tool-call parser fix (vllm-project/vllm#${PR_REF})" \
       org.opencontainers.image.base.digest="${BASE_DIGEST}" \
+      org.opencontainers.image.version="${BASE_DATE}" \
       org.opencontainers.image.source="${SOURCE_URL}" \
       patch.pr="vllm-project/vllm#${PR_REF}@${PR_SHA}" \
       patch.scope="vllm/tool_parsers/gemma4_tool_parser.py"

@@ -18,7 +18,13 @@ services:
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
     command:
       - --model
-      - Intel/gemma-4-31B-it-int4-AutoRound      # GPTQ/AutoRound INT4 (not AWQ)
+      # Google official QAT W4A16 (compressed-tensors -> vLLM-native, no
+      # --quantization flag; multimodal/vision; Google says quality tracks BF16).
+      # A/B vs AutoRound before trusting in prod. (31B tower path reads
+      # vision_config.default_output_length, which the QAT export keeps -- the
+      # num_soft_tokens crash in #45070/#45039 is the 12B-unified variant only.)
+      - google/gemma-4-31B-it-qat-w4a16-ct
+      # Fallback (proven, pre-QAT default): Intel/gemma-4-31B-it-int4-AutoRound  # GPTQ/AutoRound INT4 (not AWQ)
       - --served-model-name
       - gemma-4-31b
       - --dtype
@@ -32,6 +38,11 @@ services:
       # MTP + streaming tool calls is exactly what the PR #42006 fix targets:
       - --speculative-config
       - '{"method":"mtp","model":"google/gemma-4-31B-it-assistant","num_speculative_tokens":4}'
+      # MTP reserves draft-token slots; the scheduler otherwise caps prefill at
+      # ~2496 tokens and warns of suboptimal throughput. Raise the prefill budget
+      # for headroom (correctness-neutral; independent of the --max-num-seqs cap).
+      - --max-num-batched-tokens
+      - "8192"
       - --disable-custom-all-reduce              # multi-GPU without NVLink
       - --trust-remote-code
       - --host
